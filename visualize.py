@@ -4,16 +4,17 @@ import numpy as np
 import moviepy.editor as mpy
 import random
 import torch
-from scipy.misc import toimage
+from PIL import Image
 from tqdm import tqdm
 from pytorch_pretrained_biggan import (BigGAN, one_hot_from_names, truncated_noise_sample,
                                        save_as_images, display_in_terminal)
+# the functionality of this model has changed slightly, need to modify parts of code which work with biggan and update for image training.
 
 #get input arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("--song",required=True)
-parser.add_argument("--resolution", default='512')
-parser.add_argument("--duration", type=int)
+parser.add_argument("--resolution", default='128')
+parser.add_argument("--duration", type=int, default = 20)
 parser.add_argument("--pitch_sensitivity", type=int, default=220)
 parser.add_argument("--tempo_sensitivity", type=float, default=0.25)
 parser.add_argument("--depth", type=float, default=1)
@@ -21,9 +22,9 @@ parser.add_argument("--classes", nargs='+', type=int)
 parser.add_argument("--num_classes", type=int, default=12)
 parser.add_argument("--sort_classes_by_power", type=int, default=0)
 parser.add_argument("--jitter", type=float, default=0.5)
-parser.add_argument("--frame_length", type=int, default=512)
+parser.add_argument("--frame_length", type=int, default=256)
 parser.add_argument("--truncation", type=float, default=1)
-parser.add_argument("--smooth_factor", type=int, default=20)
+parser.add_argument("--smooth_factor", type=int, default=10)
 parser.add_argument("--batch_size", type=int, default=30)
 parser.add_argument("--use_previous_classes", type=int, default=0)
 parser.add_argument("--use_previous_vectors", type=int, default=0)
@@ -128,9 +129,8 @@ specm=(specm-np.min(specm))/np.ptp(specm)
 #create chromagram of pitches X time points
 chroma = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=frame_length)
 
-#sort pitches by overall power 
+#sort pitches by overall power ##np.argsort returns indices of how to sort the array, not the sorted array. 
 chromasort=np.argsort(np.mean(chroma,axis=1))[::-1]
-
 
 
 ########################################
@@ -381,7 +381,7 @@ for i in tqdm(range(frame_lim)):
 
     #convert to image array and add to frames
     for out in output_cpu:    
-        im=np.array(toimage(out))
+        im=np.array(Image.fromarray(out))
         frames.append(im)
         
     #empty cuda cache
